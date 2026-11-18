@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f2e8">
+  <title>Amigos Invisibles · Familia Tarruella</title>
+  <style>
+    :root { color-scheme:light; --ink:#27342e; --muted:#68746d; --green:#315d49; --cream:#f7f2e8; --paper:#fffdf8; --line:#e6dfd1; --gold:#d6ad62; --red:#8d4638 }
+    * { box-sizing:border-box }
+    body { margin:0; min-height:100vh; padding:28px 18px 56px; background:radial-gradient(ellipse at top,#fffdf8 0,#f7f2e8 70%); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif }
+    main { max-width:850px; margin:auto }
+    header { text-align:center; margin:16px 0 27px }
+    .eyebrow { color:var(--green); text-transform:uppercase; letter-spacing:.16em; font-size:.76rem; font-weight:750 }
+    h1 { margin:8px 0 7px; font-family:Georgia,serif; font-size:clamp(2rem,7vw,3.25rem); line-height:1.06; font-weight:600 }
+    header p { color:var(--muted); margin:10px auto 0; max-width:590px }
+    .card { background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:clamp(20px,4vw,30px); box-shadow:0 14px 45px #5543210c; margin:18px 0 }
+    h2 { margin:0 0 5px; font:600 1.55rem Georgia,serif }
+    .sub { color:var(--muted); margin:0 0 18px; font-size:.93rem }
+    .table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:13px; margin-top:13px }
+    table { width:100%; min-width:410px; border-collapse:collapse; text-align:left }
+    th,td { padding:12px 15px; border-bottom:1px solid var(--line) }
+    th { background:#f4efe4; color:#48574d; font-size:.82rem; text-transform:uppercase; letter-spacing:.05em }
+    tr:last-child td { border-bottom:0 }
+    .recipient-blur { color:#8d887f; letter-spacing:.1em; filter:blur(4px); user-select:none }
+    .pending { color:var(--muted); font-style:italic }
+    form { display:grid; grid-template-columns:1fr 1fr; align-items:end; gap:14px }
+    label { display:block; font-weight:700; font-size:.9rem }
+    input,select { display:block; width:100%; margin-top:7px; border:1px solid #d8d1c3; border-radius:10px; padding:12px; background:white; color:var(--ink); font:inherit }
+    button { border:0; border-radius:11px; padding:13px 18px; background:var(--green); color:white; font:700 .98rem system-ui; cursor:pointer; transition:background .15s,transform .15s }
+    button:hover { background:#244b39; transform:translateY(-1px) }
+    button:disabled { opacity:.6; cursor:wait; transform:none }
+    .secondary { background:#ede7da; color:var(--ink) }
+    .secondary:hover { background:#ded5c4 }
+    .danger { background:#8d4638 }
+    .danger:hover { background:#73372c }
+    .full { grid-column:1/-1 }
+    .status { min-height:1.4em; margin:0; color:var(--muted); font-size:.9rem }
+    .secret-result { margin:16px 0 0; padding:15px; border-radius:12px; background:#edf4ed; color:#234a36; font-weight:700; display:none }
+    .secret-result.show { display:block }
+    .secret-result strong { font:600 1.45rem Georgia,serif; display:block; margin-top:4px }
+    .admin-results { margin-top:20px; display:none }
+    .admin-results.show { display:block }
+    .pending { color:var(--muted); font-style:italic }
+    .button-row { display:flex; flex-wrap:wrap; gap:10px }
+    .button-row button { flex:1 1 210px }
+    .note { font-size:.82rem; color:var(--muted); margin:10px 0 0 }
+    footer { text-align:center; color:var(--muted); font-size:.82rem; margin-top:24px }
+    @media(max-width:560px) { form { grid-template-columns:1fr } .full { grid-column:auto } header { margin-top:5px } th,td { padding:11px 12px } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Familia Tarruella · The Royal Family</div>
+      <h1>Amigos Invisibles</h1>
+      <p>Rellena tu parte de la tabla. Tras guardar, verás tu respuesta durante cinco segundos; después se ocultará.</p>
+    </header>
+
+    <section class="card">
+      <h2>Participantes</h2>
+      <p class="sub">El orden cambia al abrir la página. La lista muestra quién ha participado; los destinatarios están ocultos.</p>
+      <div class="table-wrap"><table><thead><tr><th>Quién soy</th><th>A quién regalo</th></tr></thead><tbody id="roster" aria-live="polite"></tbody></table></div>
+      <p id="load-status" class="status" role="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>Rellena tu tabla</h2>
+      <p class="sub">Las 11 personas que ya saben su asignación eligen a quién regalan. Abuelo Rafa, Abuela Pepa y Tío Miguel eligen «No sé a quién regalo».</p>
+      <form id="entry-form">
+        <label for="giver">Quién soy
+          <select id="giver" required><option value="" selected disabled>Elige tu nombre</option></select>
+        </label>
+        <label for="recipient">A quién regalo
+          <select id="recipient" required disabled><option value="" selected disabled>Primero elige quién eres</option></select>
+        </label>
+        <div class="button-row full">
+          <button id="save-entry" type="submit">Guardar mi respuesta</button>
+          <button id="delete-entry" class="danger" type="button">Borrar mi respuesta</button>
+        </div>
+        <p id="entry-status" class="status full" role="status" aria-live="polite"></p>
+      </form>
+      <p class="note">La clave para corregir o borrar tu respuesta se guarda en el mismo navegador desde el que la envías.</p>
+      <div id="own-result" class="secret-result" role="status">Tu asignación es:<strong id="own-recipient"></strong></div>
+      <button id="reveal-own" type="button" class="secondary full" style="display:none;margin-top:12px">¿Yo a quién regalo?</button>
+    </section>
+
+    <section class="card">
+      <h2>Vista de organización</h2>
+      <p class="sub">La lista completa aparece ordenada al introducir la contraseña maestra. El sorteo solo se puede hacer una vez y únicamente cuando las 14 personas hayan rellenado su parte.</p>
+      <form id="admin-form">
+        <label for="admin-password">Contraseña maestra
+          <input id="admin-password" type="password" autocomplete="off" required placeholder="Contraseña de organización">
+        </label>
+        <button type="submit" id="show-all">Ver lista ordenada</button>
+        <p class="status full" id="admin-status" role="status" aria-live="polite"></p>
+      </form>
+      <div class="admin-results" id="admin-results">
+        <div id="admin-summary" class="sub"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Quién soy</th><th>A quién regalo</th><th>Estado</th></tr></thead>
+            <tbody id="admin-rows"></tbody>
+          </table>
+        </div>
+        <button id="draw-button" class="full" type="button" style="display:none;margin-top:14px">Sortear los 3 destinatarios restantes</button>
+      </div>
+    </section>
+    <footer>Los destinatarios no se envían a la lista pública. Solo se muestran al introducir la contraseña maestra o durante cinco segundos tras guardar.</footer>
+  </main>
+
+  <script>
+    const people = [
+      "Abuelo Rafa", "Abuela Pepa", "Tío Pepe", "Tía Isabel", "Primo Rafa Felipe",
+      "Primo Alberto", "Tío Aurelio", "Tía Benita", "Prima Victoria", "Primo Rafa López",
+      "Tita Laura", "Tío Miguel", "Primo Miguel", "Prima Gloria"
+    ];
+    const pending = ["Abuelo Rafa", "Abuela Pepa", "Tío Miguel"];
+    const known = people.filter(name => !pending.includes(name));
+    const api = "/.netlify/functions/gifts";
+    const tokenStoreKey = "familia-tarruella-gift-owner-keys";
+    const roster = document.querySelector("#roster");
+    const entryStatus = document.querySelector("#entry-status");
+    const adminStatus = document.querySelector("#admin-status");
+    const giverSelect = document.querySelector("#giver");
+    const recipientSelect = document.querySelector("#recipient");
+    let rosterOrder = shuffled(people);
+    let lastAdminResult = null;
+
+    function shuffled(items) {
+      const result = [...items];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+    function fillGivers() {
+      for (const name of people) { const option=document.createElement("option"); option.value=name; option.textContent=name; giverSelect.append(option); }
+    }
+    function updateRecipientOptions() {
+      const selectedGiver = giverSelect.value;
+      recipientSelect.replaceChildren(); recipientSelect.disabled = !selectedGiver;
+      const placeholder = document.createElement("option"); placeholder.value=""; placeholder.disabled=true; placeholder.selected=true;
+      placeholder.textContent = selectedGiver ? "Elige una opción" : "Primero elige quién eres"; recipientSelect.append(placeholder);
+      document.querySelector("#reveal-own").style.display = pending.includes(selectedGiver) ? "block" : "none";
+      clearOwnResult();
+      if (pending.includes(selectedGiver)) {
+        const option=document.createElement("option"); option.value="__unknown__"; option.textContent="No sé a quién regalo"; recipientSelect.append(option);
+      } else if (selectedGiver) {
+        for (const name of people.filter(person => person !== selectedGiver)) { const option=document.createElement("option"); option.value=name; option.textContent=name; recipientSelect.append(option); }
+      }
+    }
+    fillGivers(); giverSelect.addEventListener("change", updateRecipientOptions);
+
+    async function apiRequest(action, data = {}, method = "POST") {
+      const options = method === "GET" ? {} : { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action, ...data}) };
+      const response = await fetch(api, options); const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No se pudo completar la petición.");
+      return result;
+    }
+    function ownerTokens() {
+      try { return JSON.parse(localStorage.getItem(tokenStoreKey) || "{}"); }
+      catch { return {}; }
+    }
+    function freshToken() {
+      const bytes = new Uint8Array(32); crypto.getRandomValues(bytes);
+      return [...bytes].map(value => value.toString(16).padStart(2,"0")).join("");
+    }
+    let resultTimer;
+    function clearOwnResult() {
+      clearTimeout(resultTimer);
+      document.querySelector("#own-result").classList.remove("show");
+      document.querySelector("#own-recipient").textContent="";
+    }
+    function showOwnResult(recipient) {
+      clearOwnResult();
+      document.querySelector("#own-recipient").textContent=recipient;
+      document.querySelector("#own-result").classList.add("show");
+      resultTimer=setTimeout(clearOwnResult,5000);
+    }
+    function renderRoster(submitted = []) {
+      roster.replaceChildren();
+      for (const name of rosterOrder) {
+        const row=roster.insertRow();
+        const nameCell=row.insertCell(); nameCell.textContent=name;
+        if(submitted.includes(name)) { const badge=document.createElement("span"); badge.className="status-pill"; badge.textContent="✓"; nameCell.append(badge); }
+        const recipientCell=row.insertCell();
+        const hidden=document.createElement("span"); hidden.className=submitted.includes(name)?"recipient-blur":"pending";
+        hidden.textContent=submitted.includes(name)?"••••••••":"Pendiente";
+        if(submitted.includes(name)) hidden.setAttribute("aria-label","destinatario oculto");
+        recipientCell.append(hidden);
+      }
+    }
+    async function refreshRoster() {
+      try { const data=await apiRequest("status",{},"GET"); renderRoster(data.submitted || []); document.querySelector("#load-status").textContent="Estado actualizado."; }
+      catch { document.querySelector("#load-status").textContent="No se pudo conectar. Comprueba que la página esté publicada en Netlify."; }
+    }
+    renderRoster(); refreshRoster(); setInterval(refreshRoster,20000);
+
+    document.querySelector("#entry-form").addEventListener("submit", async event => {
+      event.preventDefault(); const giver=giverSelect.value; const isPending=pending.includes(giver);
+      const button=document.querySelector("#save-entry"); button.disabled=true; entryStatus.textContent="Guardando…";
+      const tokens=ownerTokens(); const token=tokens[giver] || freshToken();
+      try {
+        const result=await apiRequest("save-entry",{
+          giver,
+          recipient:isPending?null:recipientSelect.value,
+          ownerToken:token
+        });
+        if (!tokens[giver]) { tokens[giver]=token; localStorage.setItem(tokenStoreKey,JSON.stringify(tokens)); }
+        entryStatus.textContent=isPending?"Guardado: has indicado que no sabes a quién regalas.":"Guardado. Tu respuesta se verá durante cinco segundos.";
+        if(result.recipient) showOwnResult(result.recipient);
+        await refreshRoster(); if (lastAdminResult) await loadAdminList();
+      } catch(error) { entryStatus.textContent=error.message; }
+      finally { button.disabled=false; }
+    });
+
+    document.querySelector("#delete-entry").addEventListener("click", async () => {
+      const giver=giverSelect.value;
+      if (!giver) { entryStatus.textContent="Primero elige quién eres."; return; }
+      const tokens=ownerTokens(); const ownerToken=tokens[giver];
+      if (!ownerToken) { entryStatus.textContent="No encuentro la clave de esta respuesta en este navegador. Bórrala desde el mismo navegador donde la guardaste."; return; }
+      const button=document.querySelector("#delete-entry"); button.disabled=true; entryStatus.textContent="Borrando…";
+      try {
+        await apiRequest("delete-entry",{giver,ownerToken});
+        delete tokens[giver]; localStorage.setItem(tokenStoreKey,JSON.stringify(tokens)); clearOwnResult();
+        entryStatus.textContent="Tu respuesta se ha borrado."; await refreshRoster(); if(lastAdminResult) await loadAdminList();
+      } catch(error) { entryStatus.textContent=error.message; }
+      finally { button.disabled=false; }
+    });
+
+    document.querySelector("#reveal-own").addEventListener("click", async () => {
+      const giver=giverSelect.value;
+      if(!pending.includes(giver)) { entryStatus.textContent="Elige Abuelo Rafa, Abuela Pepa o Tío Miguel."; return; }
+      const button=document.querySelector("#reveal-own"); button.disabled=true; entryStatus.textContent="Comprobando…";
+      clearOwnResult();
+      try {
+        const result=await apiRequest("reveal-own",{giver});
+        showOwnResult(result.recipient); entryStatus.textContent="Se ocultará automáticamente en cinco segundos.";
+      } catch(error) { entryStatus.textContent=error.message; }
+      finally { button.disabled=false; }
+    });
+
+    async function loadAdminList() {
+      const password=document.querySelector("#admin-password").value;
+      if(!password) throw new Error("Introduce la contraseña maestra.");
+      const result=await apiRequest("admin-list",{password}); lastAdminResult=result;
+      const rows=document.querySelector("#admin-rows"); rows.replaceChildren();
+      for(const entry of result.entries) {
+        const row=rows.insertRow(); row.insertCell().textContent=entry.giver;
+        const target=row.insertCell(); target.textContent=entry.recipient || (entry.waitingForDraw?"No sé a quién regalo":"—"); if(!entry.recipient) target.className="pending";
+        const state=row.insertCell(); state.textContent=entry.recipient?"Sorteado/guardado":entry.waitingForDraw?"Lista para sorteo":"Falta rellenar";
+      }
+      document.querySelector("#admin-summary").textContent=`${result.completedCount} de 14 han rellenado su parte. ${result.drawn?"El sorteo ya está hecho y bloqueado.":result.canDraw?"Ya se puede hacer el sorteo de una sola vez.":`Faltan ${14-result.completedCount} respuestas.`}`;
+      document.querySelector("#draw-button").style.display=result.canDraw?"block":"none";
+      document.querySelector("#admin-results").classList.add("show");
+      await refreshRoster();
+      return result;
+    }
+    document.querySelector("#admin-form").addEventListener("submit",async event=>{
+      event.preventDefault(); const button=document.querySelector("#show-all"); button.disabled=true; adminStatus.textContent="Cargando…";
+      try { const result=await loadAdminList(); adminStatus.textContent=result.drawn?"Sorteo completado; las asignaciones ya no cambian.":"Lista cargada."; }
+      catch(error) { adminStatus.textContent=error.message; document.querySelector("#admin-results").classList.remove("show"); }
+      finally { button.disabled=false; }
+    });
+    document.querySelector("#draw-button").addEventListener("click",async()=>{
+      if(!window.confirm("¿Hacemos ahora el sorteo? Solo se puede hacer una vez y las asignaciones quedarán bloqueadas.")) return;
+      const button=document.querySelector("#draw-button"); button.disabled=true; adminStatus.textContent="Haciendo el sorteo…";
+      try {
+        await apiRequest("draw",{password:document.querySelector("#admin-password").value});
+        const result=await loadAdminList(); adminStatus.textContent="Sorteo completado. Las asignaciones quedaron guardadas y no volverán a cambiar.";
+      } catch(error) { adminStatus.textContent=error.message; button.disabled=false; }
+    });
+  </script>
+</body>
+</html>
